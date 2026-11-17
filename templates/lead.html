@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadFlow | Lead Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header class="navbar">
+        <a href="{{ url_for('dashboard') }}" class="logo">LeadFlow</a>
+
+        <nav>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+
+            <form method="POST" action="{{ url_for('logout') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="secondary-btn">Logout</button>
+            </form>
+        </nav>
+    </header>
+
+    <main class="dashboard-container">
+
+        <a href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
+
+        <section class="content-card">
+            <h1>{{ lead.name }}</h1>
+
+            <p><strong>Email:</strong> {{ lead.email }}</p>
+            <p><strong>Phone:</strong> {{ lead.phone or 'Not provided' }}</p>
+            <p><strong>Source:</strong> {{ lead.source or 'Not provided' }}</p>
+            <p><strong>Status:</strong> {{ lead.status }}</p>
+            <p><strong>Created:</strong> {{ lead.created_at }}</p>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <!-- Add Notes -->
+        <section class="content-card">
+            <h2>Add a Note</h2>
+
+            <form method="POST"
+                  action="{{ url_for('add_note', lead_id=lead.id) }}">
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <label>Note</label>
+                <textarea name="note"
+                          placeholder="Write an update about this client..."
+                          rows="4"
+                          required></textarea>
+
+                <button type="submit" class="primary-btn">
+                    Save Note
+                </button>
+            </form>
+
+            <h3>Previous Notes</h3>
+
+            {% if notes %}
+                {% for note in notes %}
+                    <div class="note-item">
+                        <p>{{ note.note }}</p>
+                        <small>{{ note.created_at }}</small>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-message">No notes added yet.</p>
+            {% endif %}
+        </section>
+
+        <!-- Add Follow-up -->
+        <section class="content-card">
+            <h2>Schedule Follow-up</h2>
+
+            <form method="POST"
+                  action="{{ url_for('add_follow_up', lead_id=lead.id) }}">
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <label>Follow-up Date</label>
+                <input type="date"
+                       name="follow_up_date"
+                       required>
+
+                <label>Description</label>
+                <textarea name="description"
+                          placeholder="What should you follow up about?"
+                          rows="3"
+                          required></textarea>
+
+                <button type="submit" class="primary-btn">
+                    Schedule Follow-up
+                </button>
+            </form>
+        </section>
+
+        <!-- Follow-up History -->
+        <section class="content-card">
+            <h2>Follow-up History</h2>
+
+            {% if follow_ups %}
+                {% for followup in follow_ups %}
+                    <div class="note-item">
+                        <p><strong>Date:</strong> {{ followup.follow_up_date }}</p>
+                        <p>{{ followup.description }}</p>
+
+                        {% if followup.completed %}
+                            <span class="status converted">Completed</span>
+                        {% else %}
+                            <span class="status new">Pending</span>
+
+                            <form method="POST"
+                                  action="{{ url_for('complete_follow_up', follow_up_id=followup.id) }}">
+
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                                <button type="submit" class="small-btn">
+                                    Mark Completed
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-message">No follow-ups scheduled yet.</p>
+            {% endif %}
+        </section>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+</body>
+</html>

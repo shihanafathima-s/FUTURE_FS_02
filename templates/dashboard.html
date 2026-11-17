@@ -1,0 +1,222 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadFlow | Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header class="navbar">
+        <a href="{{ url_for('dashboard') }}" class="logo">LeadFlow</a>
+
+        <nav>
+            <span>Welcome, {{ username }}!</span>
+            <form method="POST" action="{{ url_for('logout') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="secondary-btn">Logout</button>
+            </form>
+        </nav>
+    </header>
+
+    <main class="dashboard-container">
+
+        <h1>Dashboard</h1>
+        <p class="muted">Manage your clients and track your business opportunities.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <!-- Statistics -->
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <h3>Total Leads</h3>
+                <p>{{ total_leads }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>New Leads</h3>
+                <p>{{ new_leads }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Contacted</h3>
+                <p>{{ contacted_leads }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Converted</h3>
+                <p>{{ converted_leads }}</p>
+            </div>
+
+        </section>
+
+        <!-- Add Lead -->
+        <section class="content-card">
+            <h2>Add New Lead</h2>
+
+            <form method="POST" action="{{ url_for('add_lead') }}" class="lead-form">
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <div>
+                    <label>Client Name</label>
+                    <input type="text" name="name" placeholder="Enter client name" required>
+                </div>
+
+                <div>
+                    <label>Email Address</label>
+                    <input type="email" name="email" placeholder="Enter email address" required>
+                </div>
+
+                <div>
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" placeholder="Enter phone number">
+                </div>
+
+                <div>
+                    <label>Lead Source</label>
+                    <select name="source">
+                        <option value="">Select source</option>
+                        <option value="Website">Website</option>
+                        <option value="Social Media">Social Media</option>
+                        <option value="Referral">Referral</option>
+                        <option value="Advertisement">Advertisement</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="primary-btn">Add Lead</button>
+
+            </form>
+        </section>
+
+        <!-- Leads Table -->
+        <section class="content-card">
+            <h2>My Leads</h2>
+
+            {% if leads %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Source</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for lead in leads %}
+                            <tr>
+                                <td>{{ lead.name }}</td>
+                                <td>{{ lead.email }}</td>
+                                <td>{{ lead.phone or '-' }}</td>
+                                <td>{{ lead.source or '-' }}</td>
+
+                                <td>
+                                    <span class="status {{ lead.status|lower }}">
+                                        {{ lead.status }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <a href="{{ url_for('lead_details', lead_id=lead.id) }}">
+                                        View
+                                    </a>
+
+                                    <form method="POST"
+                                          action="{{ url_for('update_status', lead_id=lead.id) }}"
+                                          style="display:inline;">
+
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                                        <select name="status">
+                                            <option value="New" {% if lead.status == 'New' %}selected{% endif %}>New</option>
+                                            <option value="Contacted" {% if lead.status == 'Contacted' %}selected{% endif %}>Contacted</option>
+                                            <option value="Converted" {% if lead.status == 'Converted' %}selected{% endif %}>Converted</option>
+                                        </select>
+
+                                        <button type="submit" class="small-btn">Update</button>
+                                    </form>
+
+                                    <form method="POST"
+                                          action="{{ url_for('delete_lead', lead_id=lead.id) }}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Are you sure you want to delete this lead?');">
+
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <button type="submit" class="delete-btn">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty-message">
+                    You haven't added any leads yet. Add your first lead above!
+                </p>
+            {% endif %}
+        </section>
+
+        <!-- Upcoming Follow-ups -->
+        <section class="content-card">
+            <h2>Upcoming Follow-ups</h2>
+
+            {% if upcoming_followups %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for followup in upcoming_followups %}
+                            <tr>
+                                <td>{{ followup.lead_name }}</td>
+                                <td>{{ followup.follow_up_date }}</td>
+                                <td>{{ followup.description }}</td>
+                                <td>
+                                    <form method="POST"
+                                          action="{{ url_for('complete_follow_up', follow_up_id=followup.id) }}">
+
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <button type="submit" class="small-btn">
+                                            Mark Completed
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty-message">No pending follow-ups.</p>
+            {% endif %}
+        </section>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+</body>
+</html>
